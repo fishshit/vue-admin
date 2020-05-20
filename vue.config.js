@@ -85,10 +85,17 @@ module.exports = {
     // 如果这个值是一个函数，则会接收被解析的配置作为参数。该函数及可以修改配置并不返回任何东西，也可以返回一个被克隆或合并过的配置版本。
     // 细节查看 https://cli.vuejs.org/zh/guide/webpack.html#简单的配置方式
     configureWebpack: config => {
-        if (process.env.NODE_ENV === 'production') {
-          // 为生产环境修改配置...
-        } else {
-          // 为开发环境修改配置...
+        config.resolve = {
+            extensions:['.js','.json','.vue'],
+            alias:{
+                '@': path.resolve(__dirname,'./src'),
+                'public': path.resolve(__dirname,'./public'),
+                '@c': path.resolve(__dirname,'./src/components'),
+                'common': path.resolve(__dirname,'./src/common'),
+                'api': path.resolve(__dirname,'./src/api'),
+                'views': path.resolve(__dirname,'./src/views'),
+                'data': path.resolve(__dirname,'./src/data')
+            }
         }
     },
 
