@@ -7,8 +7,8 @@
             <!--表单start-->
             <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" class="login-form" size="medium">
             <el-form-item prop="userName" class="item-form">
-                <label>邮箱</label> 
-                <el-input type="text" v-model="ruleForm.userName" autocomplete="off"></el-input>
+                <label for="userName">邮箱</label> 
+                <el-input id="userName" type="text" v-model="ruleForm.userName" autocomplete="off"></el-input>
             </el-form-item>
             <el-form-item prop="passWord" class="item-form">
                 <label>密码</label>
@@ -25,25 +25,27 @@
                         <el-input v-model.number="ruleForm.vCode" maxlength="6"></el-input>
                     </el-col>
                     <el-col :span="8">
-                        <el-button type="success" @click="submitForm('ruleForm')" class="block">获取验证码</el-button>
+                        <el-button type="success" @click="getSms()" class="block">获取验证码</el-button>
                     </el-col>
                 </el-row>
                 
             </el-form-item>
             <el-form-item>
-                <el-button type="danger" @click="submitForm('ruleForm')" class="login-bth block">提交</el-button>
+                <el-button type="danger" @click="submitForm('ruleForm')" class="login-bth block" :disabled="loginButtonStatus">{{model === 'login' ? "登陆" : "注册"}}</el-button>
             </el-form-item>
             </el-form>
         </div>
     </div>
 </template>
 <script>
+import { GetSms } from "@/api/login";
+import { reactive,ref,onMounted } from '@vue/composition-api';
 import {validatepassWord,validateEmail,validatevCode} from '@/utils/validate';
     export default{
         name:'login',
-        data(){
+        setup(props,{refs,root}){
             //用户名
-            var validateuserName = (rule, value, callback) => {
+            let validateuserName = (rule, value, callback) => {
                 
                 if (value === '') {
                     callback(new Error('请输入邮箱'));
@@ -54,8 +56,8 @@ import {validatepassWord,validateEmail,validatevCode} from '@/utils/validate';
                 }
             };
             //密码
-            var validatePass = (rule, value, callback) => {
-                if (value === '') {
+            let validatePass = (rule, value, callback) => {
+                if (value === '') { 
                     callback(new Error('密码不能为空'));
                 }else if(!validatepassWord(value)) {
                     callback(new Error('密码为6~20位字母+数字组合'));
@@ -63,82 +65,115 @@ import {validatepassWord,validateEmail,validatevCode} from '@/utils/validate';
                     callback();
                 }
             };
-            var validatePasss = (rule, value, callback) => {
+            let validatePasss = (rule, value, callback) => {
                 if (value === '') {
                     callback(new Error('请再次输入密码'));
-                }else if(value!=this.ruleForm.passWord) {
+                }else if(value!=ruleForm.passWord) {
                     callback(new Error('重复密码不正确'));
                 }else{
                     callback();
                 }
             };
             //验证码
-            var validdatevCode = (rule, value, callback) => {
-                
+            let validdatevCode = (rule, value, callback) => {
                 if (value === '') {
                     callback(new Error('请输入验证码'));
                 }else if(!validatevCode(value)) {
-                    callback(new Error('验证码为6位数字'));
+                    callback(new Error('请输入正确的验证码'));
                 }else{
                     callback();
                 }
             };
-            return{
-                menutab:[
-                    {
-                        txt:'登陆',current:true,type:'login'
-                    },{
-                        txt:'注册',current:false,type:'register'
-                    }
+
+
+            //对象类型的数据用reactive声明
+            const menutab = reactive([
+                {txt:'登陆',current:true,type:'login'},
+                {txt:'注册',current:false,type:'register'}
+            ])
+            //模块值
+            const ruleForm=reactive({
+                userName: '',
+                passWord: '',
+                passWords:'',
+                vCode: ''
+            })
+            //表单验证
+            const rules=reactive({
+                userName: [
+                    { validator: validateuserName, trigger: 'blur' }
                 ],
-                //模块值
-                model:'',
-                ruleForm: {
-                    userName: '',
-                    passWord: '',
-                    passWords:'',
-                    vCode: ''
-                    },
-                    rules: {
-                    userName: [
-                        { validator: validateuserName, trigger: 'blur' }
-                    ],
-                    passWord: [
-                        { validator: validatePass, trigger: 'blur' }
-                    ],
-                    passWords: [
-                        { validator: validatePasss, trigger: 'blur' }
-                    ],
-                    vCode: [
-                        { validator: validdatevCode, trigger: 'blur' }
-                    ]
-                    }
-            }
-            
-        },
-        created() {
-        },
-        mounted() {
-        },
-        methods: {
-            toggleMneu(data){
-                this.menutab.forEach(elem => {
+                passWord: [
+                    { validator: validatePass, trigger: 'blur' }
+                ],
+                passWords: [
+                    { validator: validatePasss, trigger: 'blur' }
+                ],
+                vCode: [
+                    { validator: validdatevCode, trigger: 'blur' }
+                ]
+            })
+            //基础类型的数据用ref声明
+            const model = ref('login');
+            //登陆按钮禁用状态
+            const loginButtonStatus = ref(true);
+
+            //声明函数采用es6箭头函数的方式
+            const toggleMneu=(data=>{
+                menutab.forEach(elem => {
                     elem.current = false;
                 })
                 data.current = true;
-                this.model=data.type;//绑定属性到重复校验处进行是否显示判断。
-            },
-            submitForm(formName) {
-                this.$refs[formName].validate((valid) => {
-                if (valid) {
-                    alert('submit!');
-                } else {
-                    console.log('error submit!!');
+                model.value=data.type;//绑定属性到重复校验处进行是否显示判断。
+            })
+            /**
+             * 获取验证码
+             */
+            const getSms=(()=>{
+                /*if(ruleForm.userName === ''){
+                    root.$message.error("邮箱不能为空");
                     return false;
+                }*/
+
+                let data={
+                    username:ruleForm.userName,
                 }
+                GetSms(data).then(response=>{
+
+                }).catch(error=>{
+                    console.log(error);
+                })
+            })
+            /**
+             * 提交表单 
+             */
+            const submitForm=(formName=>{
+
+                refs[formName].validate((valid) => {
+                    if (valid) {
+                        alert('submit!');
+                    } else {
+                        console.log('error submit!!');
+                        return false;
+                    }
                 });
+            }) 
+            //生命周期
+            onMounted(()=>{
+                
+            })
+            //需要用的模块、方法要用return丢出去
+            return{
+                menutab,
+                model,
+                toggleMneu,
+                submitForm,
+                ruleForm,
+                rules,
+                getSms,
+                loginButtonStatus
             }
-        }
+        },
     }
 </script>
 <style lang="scss" scope>

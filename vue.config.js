@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     // type :string  defalut :"/"
     // 把开发服务器架设在根路径
-    publicPath: process.env.NODE_ENV === 'produvtion' ? '/production-sub-path/' : '/',
+    publicPath: process.env.NODE_ENV === 'produvtion' ? '' : '/',
 
     // type :string  defalut :"dist"
     // 打包后的文件夹名字
@@ -51,7 +51,7 @@ module.exports = {
         // false：无反应
         // error：这会强制 eslint-loader 将 lint 错误输出为编译错误，同时也意味着 lint 错误将会导致编译失败。
         // 通过设置让浏览器 overlay 同时显示警告和错误 在 devServe 配置项中  ==>  overlay: {warnings: true,errors: true}
-    lintOnSave: true,
+    lintOnSave: false,
 
     // type :boolean defalut :"false"
     // 是否使用包含运行时编译器的 Vue 构建版本。设置为 true 后你就可以在 Vue 组件中使用 template 选项了，但是这会让你的应用额外增加 10kb 左右。
@@ -157,9 +157,20 @@ module.exports = {
     // 开发配置
     // 细节查看 https://webpack.js.org/configuration/dev-server/#devserver
     devServer: {
-        open: true,
+        open: false,
         hot: true,
+        https: false,
+        hotOnly:false,
         host: '0.0.0.0',
-        port: '8081'
+        port: '8080',
+        proxy: {
+            '/devApi':{
+                target:"http://www.web-jshtml.cn/productapi",
+                changeOrigin:true,
+                pathRewrite:{
+                    '^/devApi':''
+                }
+            }
+        },
     }
 }

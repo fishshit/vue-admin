@@ -31,7 +31,7 @@ export function validateEmail(value) {
  * 验证码
  */
 export function validatevCode(value) {
-    let reg = /^[0-9]{6}$/;
+    let reg = /^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6}$/;
     if(!reg.test(value)){
         return false;
     }else{
